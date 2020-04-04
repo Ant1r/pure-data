@@ -1,41 +1,37 @@
-#N canvas 576 182 717 443 12;
-#X obj 0 0 cnv 8 100 60 empty empty knb 20 20 1 18 -262144 -1109 0
+#N canvas 576 182 722 543 12;
+#X obj 9 11 cnv 8 100 60 empty empty knb 20 20 1 18 -262144 -1109 0
 ;
-#X floatatom 63 177 5 0 0 0 - - -;
-#X floatatom 63 87 5 0 0 0 - - -;
-#X msg 11 135 set \$1;
-#X floatatom 217 165 5 0 0 0 - - -;
-#X floatatom 217 92 5 0 0 0 - - -;
-#X obj 126 89 knb 80 100 0 127 0 1 kii_snd kii_rcv empty -2 -6 0 8
+#X floatatom 72 188 5 0 0 0 - - -;
+#X floatatom 72 98 5 0 0 0 - - -;
+#X msg 20 146 set \$1;
+#X floatatom 226 176 5 0 0 0 - - -;
+#X floatatom 226 103 5 0 0 0 - - -;
+#X obj 135 100 knb 80 100 0 127 0 1 kii_snd kii_rcv empty -2 -6 0 8
 -4160 -257985 -1 8300 0 0 line 5 -135 135;
-#X obj 63 113 knb 30 100 0 127 0 0 empty empty empty -2 -6 0 8 -4160
+#X obj 72 124 knb 30 100 0 127 0 0 empty empty empty -2 -6 0 8 -4160
 -1 -1 0 0 0 line 0 -135 135;
-#X obj 63 154 knb 20 100 127 0 0 0 empty empty empty -2 -6 0 8 -258113
+#X obj 72 165 knb 20 100 127 0 0 0 empty empty empty -2 -6 0 8 -258113
 -1 -1 0 0 0 line 0 -135 135;
-#X obj 369 284 knb 60 100 0 1 0 1 empty empty empty -2 -6 0 8 -262144
+#X obj 452 376 knb 60 100 0 1 0 1 empty empty empty -2 -6 0 8 -262144
 -1 -1 5800 0 0 triangle 0 -180 178;
-#X text 503 63 high sens;
-#X text 523 86 default;
-#X text 68 12 gui-round-knob:;
-#X text 31 349 note: when selected \, knb shows its inlet \, outlet
-and a rectangular outline \, in order to help connecting. When edit
-mode is switched off \, they disapear after the mkob is hovered by
-the mouse or the knob value is changed., f 76;
-#X text 33 48 right click for properties to modify geometry \, colors
+#X text 559 95 high sens;
+#X text 579 117 default;
+#X text 77 23 gui-round-knob:;
+#X text 42 59 right click for properties to modify geometry \, colors
 \, etc., f 30;
-#X text 29 204 shift-click & drag for fine-tuning (0.01 pixels), f
+#X text 38 215 shift-click & drag for fine-tuning (0.01 pixels), f
 25;
-#X text 1 399 (c) Antoine Rousseau 2003-2020;
-#X text 543 157 270° rotation;
-#X text 541 181 360° rotation;
-#X msg 299 98 size \$1;
-#X floatatom 299 77 5 0 0 0 - - -;
-#X text 366 8 "sensitivity" parameter sets mouse excursion for full
+#X text 28 491 (c) Antoine Rousseau 2003-2020;
+#X text 603 194 270° rotation;
+#X text 609 217 360° rotation;
+#X msg 355 131 size \$1;
+#X floatatom 355 110 5 0 0 0 - - -;
+#X text 412 36 "sensitivity" parameter sets mouse excursion for full
 range., f 35;
-#X msg 369 40 sensitivity 300;
-#X msg 398 63 sensitivity 10;
-#X text 481 41 low sensitivity;
-#X msg 413 85 sensitivity 100;
+#X msg 425 73 sensitivity 300;
+#X msg 454 96 sensitivity 10;
+#X text 537 72 low sensitivity;
+#X msg 469 118 sensitivity 100;
 #N canvas 66 129 827 569 edit 0;
 #X floatatom 429 202 1 0 1 0 - - -;
 #X text 553 402 no init;
@@ -284,41 +280,47 @@ range., f 35;
 #X connect 95 0 96 1;
 #X connect 96 0 98 0;
 #X connect 97 0 93 0;
-#X restore 153 173 pd edit;
-#X obj 217 115 s kii_rcv;
-#X obj 217 142 r kii_snd;
-#X msg 456 205 wiper none;
-#X msg 456 227 wiper line;
-#X msg 456 250 wiper triangle;
-#X msg 437 156 angle -135 135;
-#X msg 437 180 angle -180 180;
-#X msg 427 109 angular 0;
-#X text 502 133 angular control;
-#X text 494 109 linear control;
-#X msg 433 133 angular 1;
-#X floatatom 456 275 5 0 0 1 arc_width - -;
-#X msg 456 298 arc \$1;
-#X obj 210 277 knb 50 100 -1 1 0 1 empty empty empty -2 -6 0 8 -258113
+#X restore 269 223 pd edit;
+#X obj 226 126 s kii_rcv;
+#X obj 226 153 r kii_snd;
+#X msg 512 243 wiper none;
+#X msg 518 265 wiper line;
+#X msg 523 287 wiper triangle;
+#X msg 497 195 angle -135 135;
+#X msg 503 217 angle -180 180;
+#X msg 483 145 angular 0;
+#X text 559 167 angular control;
+#X text 551 145 linear control;
+#X msg 489 167 angular 1;
+#X floatatom 529 315 5 0 0 1 arc_width - -;
+#X msg 529 338 arc \$1;
+#X obj 174 337 knb 50 100 -1 1 0 1 empty empty empty -2 -6 0 8 -258113
 -1 -1 8300 0 0 none 15 -135 135;
-#X text 196 259 +/- knob:;
+#X text 160 319 +/- knob:;
+#X text 30 424 note: when you have send and receive names \, the inlet
+and outlet are hidden \, as usual \, but the outline also disappears.
+, f 43;
+#X text 511 485 updated for pd 0.51;
+#X text 45 275 If you have a reange from negative to positive \, the
+arc goes either way (+ & -)., f 34;
 #X connect 2 0 7 0;
 #X connect 3 0 7 0;
-#X connect 5 0 27 0;
+#X connect 5 0 26 0;
 #X connect 7 0 8 0;
 #X connect 8 0 3 0;
 #X connect 8 0 1 0;
-#X connect 19 0 9 0;
-#X connect 20 0 19 0;
+#X connect 18 0 9 0;
+#X connect 19 0 18 0;
+#X connect 21 0 9 0;
 #X connect 22 0 9 0;
-#X connect 23 0 9 0;
-#X connect 25 0 9 0;
-#X connect 28 0 4 0;
+#X connect 24 0 9 0;
+#X connect 27 0 4 0;
+#X connect 28 0 9 0;
 #X connect 29 0 9 0;
 #X connect 30 0 9 0;
 #X connect 31 0 9 0;
 #X connect 32 0 9 0;
 #X connect 33 0 9 0;
-#X connect 34 0 9 0;
-#X connect 37 0 9 0;
-#X connect 38 0 39 0;
-#X connect 39 0 9 0;
+#X connect 36 0 9 0;
+#X connect 37 0 38 0;
+#X connect 38 0 9 0;
