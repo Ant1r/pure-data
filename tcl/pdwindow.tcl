@@ -41,6 +41,7 @@ proc ::pdwindow::set_layout {} {
         set B [expr int(($i - $start) * (40 / ($end - $start))) + 50]
         .pdwindow.text.internal tag configure log${i} -foreground grey${B}
     }
+    .pdwindow.text.internal tag configure log-1 -foreground "#00c"
 }
 
 
@@ -497,6 +498,7 @@ proc ::pdwindow::create_window_finalize {} {
     if {$fontsize != ""} {
         ::dialog_font::apply .pdwindow $fontsize
     }
+    pdwindow::logpost {} -1 [_ "You can Ctrl-click most lines in the Pd-console to locate the object that emitted it."]\n
 }
 
 # this needs to happen *after* the main menu is created, otherwise the default Wish
