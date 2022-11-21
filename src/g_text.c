@@ -38,6 +38,7 @@ void gatom_undarken(t_text *x);
 
 static void glist_nograb(t_glist *x)
 {
+    post("nograb");
     if (x->gl_editor)
     {
         t_canvas *canvas = glist_getcanvas(x);
@@ -777,6 +778,7 @@ static void gatom_reborder(t_gatom *x)
 
 void gatom_undarken(t_text *x)
 {
+    post("undarken");
     if (x->te_type == T_ATOM)
     {
         ((t_gatom *)x)->a_doubleclicked =
@@ -794,6 +796,7 @@ void gatom_key(void *z, t_symbol *keysym, t_floatarg f)
     t_atom *ap = gatom_getatom(x);
 
     t_rtext *t = glist_findrtext(x->a_glist, &x->a_text);
+    if(c == 0) post("key 0, dbl=%d", x->a_doubleclicked);
     if (c == 0 && !x->a_doubleclicked)
     {
         /* we're being notified that no more keys will come for this grab */
@@ -802,6 +805,7 @@ void gatom_key(void *z, t_symbol *keysym, t_floatarg f)
         x->a_grabbed = 0;
         gatom_reborder(x);
         gatom_redraw(&x->a_text.te_g, x->a_glist);
+        post("ungrab from key 0");
     }
     else if (c == '\n')
     {
@@ -860,6 +864,7 @@ static void gatom_motion(void *z, t_floatarg dx, t_floatarg dy,
     {
         t_atom *ap;
         x->a_doubleclicked = 0;
+        post("un-dblclick from motion");
         if (x->a_dragindex <0)
             return;
         if (dy == 0 || x->a_dragindex < 0 ||
@@ -898,13 +903,16 @@ static int gatom_doclick(t_gobj *z, t_glist *gl, int xpos, int ypos,
     t_gatom *x = (t_gatom *)z;
     t_atom *ap = gatom_getatom(x);
     t_rtext *t;
+    int relxpos, relypos;
 
     if (!doit)
         return (1);
     t = glist_findrtext(x->a_glist, &x->a_text);
+    relxpos = xpos - text_xpix(&x->a_text, x->a_glist);
+    relypos = ypos - text_ypix(&x->a_text, x->a_glist);
     if (t == x->a_glist->gl_editor->e_textedfor)
     {
-        rtext_mouse(t, xpos, ypos, (dbl ? RTEXT_DBL : RTEXT_DOWN));
+        rtext_mouse(t, relxpos, relypos, (dbl ? RTEXT_DBL : RTEXT_DOWN));
         x->a_glist->gl_editor->e_onmotion = MA_DRAGTEXT;
         x->a_glist->gl_editor->e_xwas = xpos;
         x->a_glist->gl_editor->e_ywas = ypos;
@@ -950,6 +958,7 @@ static int gatom_doclick(t_gobj *z, t_glist *gl, int xpos, int ypos,
     gatom_reborder(x);
     glist_grab(x->a_glist, &x->a_text.te_g, gatom_motion, gatom_key,
         xpos, ypos);
+    post("grabbed, dbl=%d", dbl);
     return (1);
 }
 
@@ -1315,6 +1324,7 @@ static void text_activate(t_gobj *z, t_glist *glist, int state)
 {
     t_text *x = (t_text *)z;
     t_rtext *y = glist_findrtext(glist, x);
+    post("text_activate %d", state);
     if (z->g_pd != gatom_class)
         rtext_activate(y, state);
 }

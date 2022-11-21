@@ -541,6 +541,7 @@ void rtext_activate(t_rtext *x, int state)
     int w = 0, h = 0, indx;
     t_glist *glist = x->x_glist;
     t_canvas *canvas = glist_getcanvas(glist);
+    post("rtext_activate %d", state);
     if (state)
     {
         pdgui_vmess("pdtk_text_editing", "^si", canvas, x->x_tag, 1);

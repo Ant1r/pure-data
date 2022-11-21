@@ -2266,6 +2266,7 @@ static void canvas_doclick(t_canvas *x, int xpos, int ypos, int which,
             /* is a text activated ? */
         if (x->gl_editor->e_textedfor  && doit)
         {
+            post("editor has text activated");
             hitobj = rtext_getowner(x->gl_editor->e_textedfor);
             if (canvas_hitbox(x, &hitobj->te_g,
                 xpos, ypos, &x1, &y1, &x2, &y2))
@@ -2280,6 +2281,7 @@ static void canvas_doclick(t_canvas *x, int xpos, int ypos, int which,
             else
             {
                 rtext_retext(x->gl_editor->e_textedfor);
+                post("editor de-rtext_activate");
                 rtext_activate(x->gl_editor->e_textedfor, 0);
             }
             return;
