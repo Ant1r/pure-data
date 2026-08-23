@@ -569,15 +569,9 @@ proc ::pdtk_canvas::cords_to_foreground {mytoplevel {state 1}} {
 proc pdtk_canvas_create_line {canvas tag grouptag dashed width color args} {
     if ($dashed) { set dashoption "-dash -"; } else {set dashoption "" }
 
-    if {$grouptag eq "-"} {
-        eval [concat $canvas create line $args $dashoption \
-            -width $width -fill $color  \
-            -tags \{$tag $grouptag\}]
-    } else {
-        eval [concat $canvas create line $args $dashoption \
-            -width $width -fill $color  \
-            -tags \{$tag $grouptag\}]
-    }
+    $canvas create line {*}[concat $args $dashoption] \
+        -width $width -fill $color \
+        -tags [concat $tag $grouptag]
 }
 
 # special version above for patchcords, adding "cord" to tags so that
@@ -585,10 +579,6 @@ proc pdtk_canvas_create_line {canvas tag grouptag dashed width color args} {
 #  a better way.
 
 proc pdtk_canvas_create_patchcord {canvas tag grouptag unused width color args} {
-
-#  old version using eval:
-#    eval [concat $canvas create line $args \
-#        -width $width -fill $color -capstyle projecting -tags \{$tag cord\}]
     $canvas create line {*}$args \
         -width $width -fill $color -capstyle projecting -tags [list $tag cord]
 

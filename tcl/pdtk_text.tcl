@@ -34,7 +34,7 @@ proc pdtk_text_new {tkcanvas tags x y text font_size color} {
 
 # change the text in an existing text box
 proc pdtk_text_set {tkcanvas tag text} {
-    $tkcanvas itemconfig $tag -text [::pdtk_text::unescape $text]
+    $tkcanvas itemconfigure $tag -text [::pdtk_text::unescape $text]
 }
 
 # paste into an existing text box by literally "typing" the contents of the

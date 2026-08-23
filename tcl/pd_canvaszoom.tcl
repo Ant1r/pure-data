@@ -4,7 +4,6 @@ namespace eval ::pd_canvaszoom:: {
     # exported procedures
     namespace export zoominit
     namespace export canvasxy
-    namespace export scalescript
     namespace export getzdepth
     namespace export setzdepth
 
@@ -39,12 +38,119 @@ proc ::pd_canvaszoom::init_default_zoom {} {
 
 after idle ::pd_canvaszoom::init_default_zoom
 
+# multiplies by "zdepth" all consecutive numbers from the "from"th element.
+# process maximum "max_elements" elements, and round the result if "int" is not null.
+proc ::pd_canvaszoom::scale_consecutive_numbers {from zdepth int max_elements args} {
+    set i $from
+    set result {}
+    set maxi [expr min([llength $args], [expr $from + $max_elements])]
+    while {$i < $maxi && [string is double -strict [lindex $args $i]]} {
+        if {$int} {
+            lset args $i [expr int([lindex $args $i] * $zdepth)]
+        } else {
+            lset args $i [expr [lindex $args $i] * $zdepth]
+        }
+        incr i
+    }
+    return $args
+}
+
+# substituted commands for hijacking canvas
+proc ::pd_canvaszoom::canvas_command {c method args} {
+    set zdepth [getzdepth $c]
+    # puts "canvas_command: $c $method $args"
+    if { $zdepth == 1.0 } { return [$c.orig $method {*}$args] }
+    switch $method {
+        "create" {
+            # scale coordinates
+            set args [scale_consecutive_numbers 1 $zdepth 0 1e6 {*}$args]
+
+            set widthindex [lsearch -start 2 $args "-width"]
+            # for non-text, default linewidth to 1.0
+            if {$widthindex == -1 && [lindex $args 0] != "text"} {
+                set tagsindex [lsearch -start 2 $args "-tags"]
+                incr tagsindex
+                set tags [lindex $args $tagsindex]
+                # don't scale rect selection outline width (tagged "x")
+                if {{x} ni $tags} {
+                    lset args $tagsindex $tags
+                    set args [linsert $args $tagsindex+1 -width 1.0]
+                    set widthindex [lsearch -start 2 $args "-width"]
+                }
+            }
+            # now scale 'width' value, if any
+            if {$widthindex != -1} {
+                incr widthindex
+                set args [scale_consecutive_numbers $widthindex $zdepth 0 1e6 {*}$args]
+            }
+
+            # scale font if any
+            if {[set fontindex [lsearch -start 2 $args "-font"]] != -1} {
+                incr fontindex
+                set font [lindex $args $fontindex]
+                set font [scalefont $font [lindex $font 1] $zdepth]
+                lset args $fontindex $font
+            }
+        }
+        "move" {
+            set args [scale_consecutive_numbers 1 $zdepth 0 2 {*}$args]
+        }
+        "coords" {
+            set args [scale_consecutive_numbers 1 $zdepth 0 1e6 {*}$args]
+        }
+        "itemconfigure" {
+            # scale width
+            set widthindex [lsearch -start 1 $args "-width"]
+            if {$widthindex != -1} {
+                incr widthindex
+                set args [scale_consecutive_numbers $widthindex $zdepth 0 1 {*}$args]
+            }
+            # scale font
+            set fontindex [lsearch -start 1 $args "-font"]
+            if {$fontindex != -1} {
+                incr fontindex
+                set item [lindex $args 0]
+                set font [lindex $args $fontindex]
+                set newfont [scalefont $font [lindex $font 1] $zdepth]
+                lset args $fontindex $newfont
+                # remove font tag
+                foreach {tag} [$c.orig gettags $item] {
+                    if {"_f" in [string range $tag 0 1]} {
+                        $c.orig dtag $item $tag
+                    }
+                }
+                # add the new font tag
+                $c.orig addtag _f[lindex $font 1] withtag $item"
+            }
+            # if changing the text content, remove text tag
+            if {[lsearch -start 1 $args "-text"] != -1} {
+                set item [lindex $args 0]
+                foreach {tag} [$c.orig gettags $item] {
+                    if {"_t" in [string range $tag 0 1]} {
+                        $c.orig dtag $item $tag
+                    }
+                }
+            }
+        }
+    }
+    return [$c.orig $method {*}$args]
+}
+
 proc ::pd_canvaszoom::zoominit {mytoplevel} {
     # read or define default_zoom if not already done
     ::pd_canvaszoom::init_default_zoom
 
-    # init zoom state for this canvas, if it didn't exist
     set c [tkcanvas_name $mytoplevel]
+
+    # hijack canvas
+    rename $c $c.orig
+    proc ::$c {method args} {
+        # retreive canvas name from 'info'
+        set c [lindex [info level 0] 0]
+        return [::pd_canvaszoom::canvas_command $c $method {*}$args]
+    }
+
+    # init zoom state for this canvas, if it didn't exist
     if { ! [info exists ::pd_canvaszoom::zsteps($c)]} {
         set ::pd_canvaszoom::zsteps($c) $::pd_canvaszoom::default_zoom
         set ::pd_canvaszoom::zdepth($c) [pd_canvaszoom::steps2depth $::pd_canvaszoom::zsteps($c)]
@@ -108,8 +214,8 @@ proc ::pd_canvaszoom::toastzoom {c} {
     set yT [expr $y0 + $H * [lindex [$c yview] 0] + 3]
     after cancel ::pd_canvaszoom::delete_toastzoom $c
     delete_toastzoom $c
-    $c create rectangle $xT $yT [expr $xT + 50] [expr $yT + 16] -tags _zoomtoast_ -fill "#E7E7E7"
-    $c create text [expr $xT + 5] $yT -tags _zoomtoast_ \
+    $c.orig create rectangle $xT $yT [expr $xT + 50] [expr $yT + 16] -tags _zoomtoast_ -fill "#E7E7E7"
+    $c.orig create text [expr $xT + 5] $yT -tags _zoomtoast_ \
         -text "$zoom% " \
         -fill black -anchor nw -font [get_font_for_size 14]
     after 1200 ::pd_canvaszoom::delete_toastzoom $c
@@ -231,10 +337,10 @@ proc ::pd_canvaszoom::zoom_text_and_lines {c oldzdepth zdepth} {
             # scale font
             if {[expr {abs($fontsize * $zdepth)}] >= 4} {
                 set font [scalefont $font $fontsize $zdepth];
-                $c itemconfigure $i -font $font -text $text
+                $c.orig itemconfigure $i -font $font -text $text
             } {
                 # suppress text if too small
-                $c itemconfigure $i -text {}
+                $c.orig itemconfigure $i -text {}
             }
         } else { # adjust linewidth of non-text items
             set linewidth 0
@@ -251,204 +357,21 @@ proc ::pd_canvaszoom::zoom_text_and_lines {c oldzdepth zdepth} {
                 # scale
                 set newwidth [expr {$linewidth * $zdepth}]
                 if {$newwidth < 1} {set newwidth 1}
-                $c itemconfigure $i -width $newwidth
+                $c.orig itemconfigure $i -width $newwidth
             }
         }
     }
 }
 
-proc ::pd_canvaszoom::canvasxy {tkcanvas x y} {
-    set zdepth $::pd_canvaszoom::zdepth($tkcanvas)
-    return [list [expr int([$tkcanvas canvasx $x] / $zdepth)] [expr int([$tkcanvas canvasy $y] / $zdepth)]]
+proc ::pd_canvaszoom::canvasxy {c x y} {
+    set zdepth $::pd_canvaszoom::zdepth($c)
+    return [list [expr int([$c canvasx $x] / $zdepth)] [expr int([$c canvasy $y] / $zdepth)]]
 }
 
-# compute the position of the first character of each element of the string seen as a list
-proc ::pd_canvaszoom::elements_position {instring {max_elements 1e6}} {
-    set positions 0
-    set pos 0
-    set nextpos 0
-    set element 0
-    while {[set nextpos [string first " " $instring $nextpos]] >= 0} {
-        catch {
-            if {[lindex $instring $element] in [string range $instring $pos [expr $nextpos - 1]]} {
-                set pos $nextpos
-                lappend positions $pos
-                if {[incr element] == [expr $max_elements - 1]} break
-            }
-        }
-        incr nextpos
-    }
-    lappend positions end
-    return $positions
-}
-
-# multiplies by "zdepth" all consecutive numbers from the "from"th element.
-# process maximum "max_elements" elements, and round the result if "int" is not null.
-# "lset" isn't usable here, since it modifies the other parts of the string, which breaks Tcl commands,
-# that's why "elements_position" is needed.
-proc ::pd_canvaszoom::scale_consecutive_numbers {instring from zdepth {int 0} {max_elements 1e6}} {
-    set i $from
-    set numbers {}
-    set positions [elements_position $instring [expr $from + $max_elements + 1]]
-    set maxi [expr min([llength $positions], [expr $from + $max_elements])]
-    while {$i < $maxi && [string is double -strict [lindex $instring $i]]} {
-        if {$int} {
-            lappend numbers [expr int([lindex $instring $i] * $zdepth)]
-        } else {
-            lappend numbers [expr [lindex $instring $i] * $zdepth]
-        }
-        incr i
-    }
-    set startstring [string range $instring 0 [lindex $positions $from]]
-    set endstring [string range $instring [lindex $positions $i] end]
-    return $startstring$numbers$endstring
-}
-
-# like "lset", but without changing the other parts of the string
-proc ::pd_canvaszoom::string_lset {instring index newvalue} {
-    set positions [elements_position $instring [expr $index + 1]]
-    set startstring [string range $instring 0 [lindex $positions $index]]
-    set endstring [string range $instring [lindex $positions [expr $index + 1]] end]
-    return $startstring$newvalue$endstring
-}
-
-proc ::pd_canvaszoom::unescape {text} {
-    return [string range [subst -nocommands -novariables $text] 0 end]
-}
-
-proc ::pd_canvaszoom::getzdepth tkcanvas {
-    if [info exists ::pd_canvaszoom::zdepth($tkcanvas)] {
-        return $::pd_canvaszoom::zdepth($tkcanvas)
+proc ::pd_canvaszoom::getzdepth c {
+    if [info exists ::pd_canvaszoom::zdepth($c)] {
+        return $::pd_canvaszoom::zdepth($c)
     } {
         return 0
     }
-}
-
-proc ::pd_canvaszoom::scale_command {cmd} {
-    set cmd [regsub -all "\}" $cmd "\} "]
-    set cmd [regsub -all "\"\]" $cmd "\" \]"]
-    set cmd [regsub -all {\\\n} $cmd " "]
-    switch [lindex $cmd 0] {
-        "image" {return $cmd}
-        "pdtk_text_new" {
-            if {[set zdepth [getzdepth [lindex $cmd 1]]] == 1.0} {return $cmd}
-            set font [get_font_for_size [lindex $cmd 6]]
-            set fontsize [lindex $font 1]
-            # scale position
-            set cmd [scale_consecutive_numbers $cmd 3 $zdepth 0 2]
-            # scale font
-            set displayed_fontsize [lindex [scalefont $font $fontsize $zdepth] 1]
-            set cmd [string_lset $cmd 6 [expr abs($displayed_fontsize)]]
-            # init tags
-            set text [unescape [lindex $cmd 5]]
-            set cmd [string_lset $cmd 2 [concat "\{ " [lindex $cmd 2] _f$fontsize [list _t$text] " \}"]]
-            return $cmd
-        }
-        "pdtk_text_set" {
-            if {[set zdepth [getzdepth [lindex $cmd 1]]] == 1.0} {return $cmd}
-            # remove text tag
-            set c [lindex $cmd 1]
-            set i [lindex $cmd 2]
-            set str {foreach {tag} [$c gettags $i] {if {"_t" in [string range $tag 0 1]} {$c dtag $i $tag}}}
-            set str [string map [list {$c} $c {$i} $i] $str]
-            append cmd $str
-            return $cmd
-        }
-    }
-
-    # remove ';' at the end of the line.
-    # Don't do it sooner, as it would hide the ';' in pdtk_text, e.g in [;pd dsp 1(
-    set cmd [regsub -lineanchor ";$" $cmd ""]
-
-    switch [lindex $cmd 1] {
-        "create" {
-            if {[set zdepth [getzdepth [lindex $cmd 0]]] == 1.0} {return $cmd}
-            set cmd [scale_consecutive_numbers $cmd 3 $zdepth]
-
-            set widthindex [lsearch -start 3 $cmd "-width"]
-            # for non-text, default linewidth to 1.0
-            if {$widthindex == -1 && [lindex $cmd 2] != "text"} {
-                set tagsindex [lsearch -start 3 $cmd "-tags"]
-                incr tagsindex
-                set tags [lindex $cmd $tagsindex]
-                # don't scale rect selection outline width (tagged "x")
-                if {{x} ni $tags} {
-                    set cmd [string_lset $cmd $tagsindex [concat "\{ " $tags " \}" -width 1.0]]
-                    set widthindex [lsearch -start 3 $cmd "-width"]
-                }
-            }
-            # now scale 'width' value, if any
-            if {$widthindex != -1} {
-                incr widthindex
-                set cmd [scale_consecutive_numbers $cmd $widthindex $zdepth]
-            }
-            if {[set fontindex [lsearch -start 3 $cmd "-font"]] != -1} {
-                incr fontindex
-                set c [lindex $cmd 0]
-                set i [lindex $cmd 2]
-                set font [lindex $cmd $fontindex]
-                set font [scalefont $font [lindex $font 1] $zdepth]
-                set cmd [string_lset $cmd $fontindex "\{$font\}"]
-            }
-            return $cmd
-        }
-        "coords" {
-            if {[set zdepth [getzdepth [lindex $cmd 0]]] == 1.0} {return $cmd}
-            return [scale_consecutive_numbers $cmd 3 $zdepth]
-        }
-        "move" {
-            if {[set zdepth [getzdepth [lindex $cmd 0]]] == 1.0} {return $cmd}
-            return [scale_consecutive_numbers $cmd 3 $zdepth]
-        }
-        "itemconfigure" {
-            if {[set zdepth [getzdepth [lindex $cmd 0]]] == 1.0} {return $cmd}
-            set widthindex [lsearch -start 3 $cmd "-width"]
-            if {$widthindex != -1} {
-                incr widthindex
-                set cmd [scale_consecutive_numbers $cmd $widthindex $zdepth]
-            }
-            if {[set fontindex [lsearch -start 3 $cmd "-font"]] != -1} {
-                incr fontindex
-                set c [lindex $cmd 0]
-                set i [lindex $cmd 2]
-                set font [lindex $cmd $fontindex]
-                set newfont [scalefont $font [lindex $font 1] $zdepth]
-                lset cmd $fontindex $newfont
-                # remove font tag
-                set str {foreach {tag} [$c gettags $i] {if {"_f" in [string range $tag 0 1]} {$c dtag $i $tag}}}
-                # add the new font tag
-                append str "\n $c addtag _f[lindex $font 1] withtag $i"
-                set str [string map [list {$c} $c {$i} $i] $str]
-                append cmd \n $str
-            }
-            if {[lsearch -start 3 $cmd "-text"] != -1} {
-                # remove text tag
-                set c [lindex $cmd 0]
-                set i [lindex $cmd 2]
-                set str {foreach {tag} [$c gettags $i] {if {"_t" in [string range $tag 0 1]} {$c dtag $i $tag}}}
-                set str [string map [list {$c} $c {$i} $i] $str]
-                append cmd \n $str
-            }
-            return $cmd
-        }
-    }
-    return $cmd
-}
-
-proc ::pd_canvaszoom::scalescript {incmds} {
-    set outcmds ""
-    set start_index 0
-    set end_index 0
-    # split "complete" lines:
-    while {$end_index >= 0} {
-        set end_index [string first "\n" $incmds $end_index]
-        if {$end_index == -1} {break}
-        set line [string range $incmds $start_index $end_index]
-        incr end_index
-        if {[info complete $line]} {
-            append outcmds [scale_command $line] "\n"
-            set start_index $end_index
-        }
-    }
-    return $outcmds
 }
