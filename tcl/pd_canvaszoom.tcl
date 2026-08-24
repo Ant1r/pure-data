@@ -148,6 +148,7 @@ proc ::pd_canvaszoom::zoominit {mytoplevel} {
 
     # hijack canvas
     rename $c ::pd_canvaszoom::canvas::$c
+    bind $c <Destroy> {+catch {rename %W {}}}
     proc ::$c {method args} {
         # retreive canvas name from 'info'
         set c [lindex [info level 0] 0]
