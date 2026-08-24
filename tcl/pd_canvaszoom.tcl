@@ -14,6 +14,10 @@ namespace eval ::pd_canvaszoom:: {
     variable default_zoom
 }
 
+namespace eval ::pd_canvaszoom::canvas:: {
+    # a namespace for the renamed canvas-procs
+}
+
 proc ::pd_canvaszoom::steps2depth {steps} {
     return [expr pow(2, $steps/100.0)]
 }
@@ -59,7 +63,7 @@ proc ::pd_canvaszoom::scale_consecutive_numbers {from zdepth int max_elements ar
 proc ::pd_canvaszoom::canvas_command {c method args} {
     set zdepth [getzdepth $c]
     # puts "canvas_command: $c $method $args"
-    if { $zdepth == 1.0 } { return [$c.orig $method {*}$args] }
+    if { $zdepth == 1.0 } { return [::pd_canvaszoom::canvas::$c $method {*}$args] }
     switch $method {
         "create" {
             # scale coordinates
@@ -114,26 +118,26 @@ proc ::pd_canvaszoom::canvas_command {c method args} {
                 set newfont [scalefont $font [lindex $font 1] $zdepth]
                 lset args $fontindex $newfont
                 # remove font tag
-                foreach {tag} [$c.orig gettags $item] {
+                foreach {tag} [::pd_canvaszoom::canvas::$c gettags $item] {
                     if {"_f" in [string range $tag 0 1]} {
-                        $c.orig dtag $item $tag
+                        ::pd_canvaszoom::canvas::$c dtag $item $tag
                     }
                 }
                 # add the new font tag
-                $c.orig addtag _f[lindex $font 1] withtag $item"
+                ::pd_canvaszoom::canvas::$c addtag _f[lindex $font 1] withtag $item"
             }
             # if changing the text content, remove text tag
             if {[lsearch -start 1 $args "-text"] != -1} {
                 set item [lindex $args 0]
-                foreach {tag} [$c.orig gettags $item] {
+                foreach {tag} [::pd_canvaszoom::canvas::$c gettags $item] {
                     if {"_t" in [string range $tag 0 1]} {
-                        $c.orig dtag $item $tag
+                        ::pd_canvaszoom::canvas::$c dtag $item $tag
                     }
                 }
             }
         }
     }
-    return [$c.orig $method {*}$args]
+    return [::pd_canvaszoom::canvas::$c $method {*}$args]
 }
 
 proc ::pd_canvaszoom::zoominit {mytoplevel} {
@@ -143,7 +147,7 @@ proc ::pd_canvaszoom::zoominit {mytoplevel} {
     set c [tkcanvas_name $mytoplevel]
 
     # hijack canvas
-    rename $c $c.orig
+    rename $c ::pd_canvaszoom::canvas::$c
     proc ::$c {method args} {
         # retreive canvas name from 'info'
         set c [lindex [info level 0] 0]
@@ -214,8 +218,8 @@ proc ::pd_canvaszoom::toastzoom {c} {
     set yT [expr $y0 + $H * [lindex [$c yview] 0] + 3]
     after cancel ::pd_canvaszoom::delete_toastzoom $c
     delete_toastzoom $c
-    $c.orig create rectangle $xT $yT [expr $xT + 50] [expr $yT + 16] -tags _zoomtoast_ -fill "#E7E7E7"
-    $c.orig create text [expr $xT + 5] $yT -tags _zoomtoast_ \
+    ::pd_canvaszoom::canvas::$c create rectangle $xT $yT [expr $xT + 50] [expr $yT + 16] -tags _zoomtoast_ -fill "#E7E7E7"
+    ::pd_canvaszoom::canvas::$c create text [expr $xT + 5] $yT -tags _zoomtoast_ \
         -text "$zoom% " \
         -fill black -anchor nw -font [get_font_for_size 14]
     after 1200 ::pd_canvaszoom::delete_toastzoom $c
@@ -337,10 +341,10 @@ proc ::pd_canvaszoom::zoom_text_and_lines {c oldzdepth zdepth} {
             # scale font
             if {[expr {abs($fontsize * $zdepth)}] >= 4} {
                 set font [scalefont $font $fontsize $zdepth];
-                $c.orig itemconfigure $i -font $font -text $text
+                ::pd_canvaszoom::canvas::$c itemconfigure $i -font $font -text $text
             } {
                 # suppress text if too small
-                $c.orig itemconfigure $i -text {}
+                ::pd_canvaszoom::canvas::$c itemconfigure $i -text {}
             }
         } else { # adjust linewidth of non-text items
             set linewidth 0
@@ -357,7 +361,7 @@ proc ::pd_canvaszoom::zoom_text_and_lines {c oldzdepth zdepth} {
                 # scale
                 set newwidth [expr {$linewidth * $zdepth}]
                 if {$newwidth < 1} {set newwidth 1}
-                $c.orig itemconfigure $i -width $newwidth
+                ::pd_canvaszoom::canvas::$c itemconfigure $i -width $newwidth
             }
         }
     }
