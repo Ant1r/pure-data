@@ -176,21 +176,22 @@ proc ::pd_canvaszoom::zoominit {mytoplevel} {
     switch -- $::windowingsystem {
         "x11" {
             bind all <Control-Button-4> \
-                {event generate [focus -displayof %W] <Control-MouseWheel> -delta  1}
+                {event generate [focus -displayof %W] <Control-MouseWheel> -delta  120}
             bind all <Control-Button-5> \
-                {event generate [focus -displayof %W] <Control-MouseWheel> -delta -1}
+                {event generate [focus -displayof %W] <Control-MouseWheel> -delta -120}
             bind ${mytoplevel} <Control-MouseWheel> {::pd_canvaszoom::delayed_stepzoom %W %D}
             bind ${mytoplevel} <ButtonPress-2> {%W scan mark %x %y}
             bind ${mytoplevel} <B2-Motion> {%W scan dragto %x %y 1}
         }
         "aqua" {
-            bind ${mytoplevel} <Control-MouseWheel> {::pd_canvaszoom::delayed_stepzoom %W [expr {-%D}]}
+            # on MacOS, mousewheel is upside down and scaled differently
+            bind ${mytoplevel} <Control-MouseWheel> {::pd_canvaszoom::delayed_stepzoom %W [expr %D*-120.]}
             # on MacOS mousewheel-button is button-3
             bind ${mytoplevel} <ButtonPress-3> {%W scan mark %x %y}
             bind ${mytoplevel} <B3-Motion> {%W scan dragto %x %y 1}
         }
         "win32" {
-            bind ${mytoplevel} <Control-MouseWheel> {::pd_canvaszoom::delayed_stepzoom %W [expr {%D/120}]}
+            bind ${mytoplevel} <Control-MouseWheel> {::pd_canvaszoom::delayed_stepzoom %W %D}
             bind ${mytoplevel} <ButtonPress-2> {%W scan mark %x %y}
             bind ${mytoplevel} <B2-Motion> {%W scan dragto %x %y 1}
         }
@@ -251,12 +252,11 @@ proc ::pd_canvaszoom::stepzoom {c steps} {
     # normalize canvas (so this proc works for both toplevels and canvas)
     # this won't work if a single toplevel could contain multiple canvases...
     set c [tkcanvas_name [winfo toplevel $c]]
-
     set ::pd_canvaszoom::accum_steps 0
     variable zsteps
     # don't zoom if not initialized
     if { ! [info exists zsteps($c)] } { return  }
-    set newsteps [expr $zsteps($c) + $steps * 20]
+    set newsteps [expr $zsteps($c) + $steps / 6.]
     set newsteps [expr min(max($newsteps, -400), 400)]
     ::pd_canvaszoom::setzoom $c $newsteps
 }

@@ -88,11 +88,11 @@ proc ::pd_bindings::global_bindings {} {
     # take the '=' key as a zoom-in accelerator, because '=' is the non-shifted
     # "+" key... this only makes sense on US keyboards but some users
     # expected it... go figure.
-    bind all <$::modifier-Key-equal>       {::pd_canvaszoom::stepzoom %W 1}
-    bind all <$::modifier-Key-plus>        {::pd_canvaszoom::stepzoom %W 1}
-    bind all <$::modifier-Key-minus>       {::pd_canvaszoom::stepzoom %W -1}
-    bind all <$::modifier-Key-KP_Add>      {::pd_canvaszoom::stepzoom %W 1}
-    bind all <$::modifier-Key-KP_Subtract> {::pd_canvaszoom::stepzoom %W -1}
+    bind all <$::modifier-Key-equal>       {::pd_canvaszoom::stepzoom %W 120}
+    bind all <$::modifier-Key-plus>        {::pd_canvaszoom::stepzoom %W 120}
+    bind all <$::modifier-Key-minus>       {::pd_canvaszoom::stepzoom %W -120}
+    bind all <$::modifier-Key-KP_Add>      {::pd_canvaszoom::stepzoom %W 120}
+    bind all <$::modifier-Key-KP_Subtract> {::pd_canvaszoom::stepzoom %W -120}
     bind all <$::modifier-Key-0>           {::pd_canvaszoom::setzoom %W 0}
     bind all <$::modifier-Key-KP_0>        {::pd_canvaszoom::setzoom %W 0}
 
