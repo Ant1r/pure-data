@@ -179,20 +179,20 @@ proc ::pd_canvaszoom::zoominit {mytoplevel} {
                 {event generate [focus -displayof %W] <Control-MouseWheel> -delta  1}
             bind all <Control-Button-5> \
                 {event generate [focus -displayof %W] <Control-MouseWheel> -delta -1}
-            bind $c <Control-MouseWheel> {::pd_canvaszoom::delayed_stepzoom %W %D}
-            bind $c <ButtonPress-2> {%W scan mark %x %y}
-            bind $c <B2-Motion> {%W scan dragto %x %y 1}
+            bind ${mytoplevel} <Control-MouseWheel> {::pd_canvaszoom::delayed_stepzoom %W %D}
+            bind ${mytoplevel} <ButtonPress-2> {%W scan mark %x %y}
+            bind ${mytoplevel} <B2-Motion> {%W scan dragto %x %y 1}
         }
         "aqua" {
-            bind $c <Control-MouseWheel> {::pd_canvaszoom::delayed_stepzoom %W [expr {-%D}]}
+            bind ${mytoplevel} <Control-MouseWheel> {::pd_canvaszoom::delayed_stepzoom %W [expr {-%D}]}
             # on MacOS mousewheel-button is button-3
-            bind $c <ButtonPress-3> {%W scan mark %x %y}
-            bind $c <B3-Motion> {%W scan dragto %x %y 1}
+            bind ${mytoplevel} <ButtonPress-3> {%W scan mark %x %y}
+            bind ${mytoplevel} <B3-Motion> {%W scan dragto %x %y 1}
         }
         "win32" {
-            bind $c <Control-MouseWheel> {::pd_canvaszoom::delayed_stepzoom %W [expr {%D/120}]}
-            bind $c <ButtonPress-2> {%W scan mark %x %y}
-            bind $c <B2-Motion> {%W scan dragto %x %y 1}
+            bind ${mytoplevel} <Control-MouseWheel> {::pd_canvaszoom::delayed_stepzoom %W [expr {%D/120}]}
+            bind ${mytoplevel} <ButtonPress-2> {%W scan mark %x %y}
+            bind ${mytoplevel} <B2-Motion> {%W scan dragto %x %y 1}
         }
     }
 }
@@ -248,6 +248,10 @@ proc ::pd_canvaszoom::delayed_stepzoom {c steps} {
 
 # zoom in (steps>0) or zoom out (steps<0)
 proc ::pd_canvaszoom::stepzoom {c steps} {
+    # normalize canvas (so this proc works for both toplevels and canvas)
+    # this won't work if a single toplevel could contain multiple canvases...
+    set c [tkcanvas_name [winfo toplevel $c]]
+
     set ::pd_canvaszoom::accum_steps 0
     variable zsteps
     # don't zoom if not initialized
