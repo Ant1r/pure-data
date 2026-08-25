@@ -140,6 +140,14 @@ proc ::pd_canvaszoom::canvas_command {c method args} {
     return [::pd_canvaszoom::canvas::$c $method {*}$args]
 }
 
+proc ::pd_canvaszoom::cleanup {canvas} {
+    foreach c [list ::${canvas} ::pd_canvaszoom::canvas::${canvas}] {
+        catch {
+            rename ${c} {}
+        }
+    }
+}
+
 proc ::pd_canvaszoom::zoominit {mytoplevel} {
     # read or define default_zoom if not already done
     ::pd_canvaszoom::init_default_zoom
@@ -148,7 +156,7 @@ proc ::pd_canvaszoom::zoominit {mytoplevel} {
 
     # hijack canvas
     rename $c ::pd_canvaszoom::canvas::$c
-    bind $c <Destroy> {+catch {rename %W {}}}
+    bind $c <Destroy> {+::pd_canvaszoom::cleanup %W}
     proc ::$c {method args} {
         # retreive canvas name from 'info'
         set c [lindex [info level 0] 0]
