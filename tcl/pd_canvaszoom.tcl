@@ -165,6 +165,8 @@ proc ::pd_canvaszoom::zoominit {mytoplevel} {
 
     # init zoom state for this canvas, if it didn't exist
     if { ! [info exists ::pd_canvaszoom::zsteps($c)]} {
+        # NOTE: these arrays don't get cleaned up when the canvas is destroyed
+        #       so the zoom-level is persistent when a window is closed & re-opened
         set ::pd_canvaszoom::zsteps($c) $::pd_canvaszoom::default_zoom
         set ::pd_canvaszoom::zdepth($c) [pd_canvaszoom::steps2depth $::pd_canvaszoom::zsteps($c)]
     }
