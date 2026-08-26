@@ -188,7 +188,7 @@ proc ::pd_canvaszoom::zoominit {mytoplevel} {
         }
         "aqua" {
             # on MacOS, mousewheel is upside down and scaled differently
-            bind ${c} <Control-MouseWheel> {::pd_canvaszoom::delayed_stepzoom %W [expr %D*-120]}
+            bind ${c} <Mod1-MouseWheel> {::pd_canvaszoom::delayed_stepzoom %W [expr %D*-120]}
             # on MacOS mousewheel-button is button-3
             bind ${mytoplevel} <ButtonPress-3> {%W scan mark %x %y}
             bind ${mytoplevel} <B3-Motion> {%W scan dragto %x %y 1}
