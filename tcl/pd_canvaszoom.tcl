@@ -175,26 +175,26 @@ proc ::pd_canvaszoom::zoominit {mytoplevel} {
     # LATER: probably move this to pd_bindings.tcl
     switch -- $::windowingsystem {
         "x11" {
-            bind all <Control-Button-4> \
-                {event generate [focus -displayof %W] <Control-MouseWheel> -delta  120}
-            bind all <Control-Button-5> \
-                {event generate [focus -displayof %W] <Control-MouseWheel> -delta -120}
-            # on X11, we also have to bind <Control-MouseWheel> to the toplevel window, else
+            bind all <${::modifier}-Button-4> \
+                {event generate [focus -displayof %W] <${::modifier}-MouseWheel> -delta  120}
+            bind all <${::modifier}-Button-5> \
+                {event generate [focus -displayof %W] <${::modifier}-MouseWheel> -delta -120}
+            # on X11, we also have to bind <${::modifier}-MouseWheel> to the toplevel window, else
             #    sometimes zoom isn't working on pre-opened subpatch
-            bind ${mytoplevel} <Control-MouseWheel> "focus $c"
-            bind ${c} <Control-MouseWheel> {::pd_canvaszoom::delayed_stepzoom %W %D}
+            bind ${mytoplevel} <${::modifier}-MouseWheel> "focus $c"
+            bind ${c} <${::modifier}-MouseWheel> {::pd_canvaszoom::delayed_stepzoom %W %D}
             bind ${c} <ButtonPress-2> {%W scan mark %x %y}
             bind ${c} <B2-Motion> {%W scan dragto %x %y 1}
         }
         "aqua" {
             # on MacOS, mousewheel is upside down and scaled differently
-            bind ${c} <Mod1-MouseWheel> {::pd_canvaszoom::delayed_stepzoom %W [expr %D*-120]}
+            bind ${c} <${::modifier}-MouseWheel> {::pd_canvaszoom::delayed_stepzoom %W [expr %D*-120]}
             # on MacOS mousewheel-button is button-3
             bind ${c} <ButtonPress-3> {%W scan mark %x %y}
             bind ${c} <B3-Motion> {%W scan dragto %x %y 1}
         }
         "win32" {
-            bind ${c} <Control-MouseWheel> {::pd_canvaszoom::delayed_stepzoom %W %D}
+            bind ${c} <${::modifier}-MouseWheel> {::pd_canvaszoom::delayed_stepzoom %W %D}
             bind ${c} <ButtonPress-2> {%W scan mark %x %y}
             bind ${c} <B2-Motion> {%W scan dragto %x %y 1}
         }
