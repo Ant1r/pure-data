@@ -181,7 +181,7 @@ proc ::pd_canvaszoom::zoominit {mytoplevel} {
                 {event generate [focus -displayof %W] <Control-MouseWheel> -delta -120}
             # on X11, we also have to bind <Control-MouseWheel> to the toplevel window, else
             #    sometimes zoom isn't working on pre-opened subpatch
-            bind ${mytoplevel} <Control-MouseWheel> {::pd_canvaszoom::delayed_stepzoom %W %D}
+            bind ${mytoplevel} <Control-MouseWheel> "focus $c"
             bind ${c} <Control-MouseWheel> {::pd_canvaszoom::delayed_stepzoom %W %D}
             bind ${c} <ButtonPress-2> {%W scan mark %x %y}
             bind ${c} <B2-Motion> {%W scan dragto %x %y 1}
