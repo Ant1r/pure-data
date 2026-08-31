@@ -257,10 +257,13 @@ proc ::pd_canvaszoom::toastzoom {c} {
     set yT [expr $y0 + $H * [lindex [$c yview] 0] + 3]
     after cancel ::pd_canvaszoom::delete_toastzoom $c
     delete_toastzoom $c
-    $c create rectangle $xT $yT [expr $xT + 50] [expr $yT + 16] -tags _zoomtoast_ -fill "#E7E7E7"
-    $c create text [expr $xT + 5] $yT -tags _zoomtoast_ \
+    set f TkDefaultFont
+    set w [font measure f "9999%"]
+    set h [font metrics f -ascent]
+    $c create rectangle $xT $yT [expr $xT + $w] [expr $yT + $h] -tags _zoomtoast_ -fill "#E7E7E7"
+    $c create text [expr $xT + $w] [expr $yT + $h / 2] -tags _zoomtoast_ \
         -text "$zoom% " \
-        -fill black -anchor nw -font [get_font_for_size 14]
+        -fill black -anchor e -font $f
     after 1200 ::pd_canvaszoom::delete_toastzoom $c
 }
 
@@ -356,6 +359,10 @@ proc ::pd_canvaszoom::scalefont {font fontsize zdepth} {
 
 proc ::pd_canvaszoom::zoom_text_and_lines {c oldzdepth zdepth} {
     foreach {i} [$c find all] {
+        # don't scale toast
+        if {{_zoomtoast_} in [$c gettags $i]} {
+            continue
+        }
         if {[string equal [$c type $i] text]} { # adjust fonts of text items
             set fontsize 0
             set text {}
