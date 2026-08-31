@@ -38,7 +38,7 @@ proc ::pd_canvaszoom::init_default_zoom {} {
 after idle ::pd_canvaszoom::init_default_zoom
 
 proc ::pd_canvaszoom::default_zoom_callback {widget value} {
-    set value [expr 20 * int($value / 20.)]
+    set value [expr 10 * int($value / 10.)]
     ::pd_canvaszoom::set_default_zoom $value
     set zdepth [expr int([::pd_canvaszoom::steps2depth $value] * 100)]
     ${widget}.l configure -text [_ "Default zoom level: %d%%" ${zdepth}]
@@ -53,7 +53,7 @@ proc ::pd_canvaszoom::default_zoom_pref_widget {widget} {
     }
     ${widget}.z configure \
         -from -100 -to 200 -orient horizontal \
-        -length 200 \
+        -length 300 \
         -variable ::pd_canvaszoom::default_zoom \
         -command [list ::pd_menucommands::scheduleAction ::pd_canvaszoom::default_zoom_callback ${widget}]
 
@@ -283,7 +283,7 @@ proc ::pd_canvaszoom::stepzoom {c steps} {
     variable zsteps
     # don't zoom if not initialized
     if { ! [info exists zsteps($c)] } { return  }
-    set newsteps [expr $zsteps($c) + $steps / 6.]
+    set newsteps [expr $zsteps($c) + $steps / 12.]
     set newsteps [expr min(max($newsteps, -400), 400)]
     ::pd_canvaszoom::setzoom $c $newsteps
 }
