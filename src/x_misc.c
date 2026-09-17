@@ -9,9 +9,9 @@
 #include "g_canvas.h"
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 #ifdef _WIN32
 #include <wtypes.h>
-#include <time.h>
 #else
 #include <sys/types.h>
 #include <sys/time.h>
@@ -173,8 +173,12 @@ typedef struct _cputime
     int x_warned;
 #else
     struct tms x_setcputime;
+    long x_settime;
+    int x_mode; /* 0:legacy 1:hires-process 2:hires-thread */
 #endif /* _WIN32 */
 } t_cputime;
+
+#define ts_to_ms(ts) (ts.tv_nsec / 1e6 + ts.tv_sec * 1000)
 
 static void cputime_bang(t_cputime *x)
 {
@@ -192,22 +196,37 @@ static void cputime_bang(t_cputime *x)
         x->x_usertime.QuadPart = 0;
     }
 #else
-    times(&x->x_setcputime);
+    if(x->x_mode > 0)
+    {
+        struct timespec ts;
+        clock_gettime(x->x_mode == 2 ? CLOCK_THREAD_CPUTIME_ID : CLOCK_PROCESS_CPUTIME_ID, &ts);
+        x->x_settime = ts_to_ms(ts);
+    }
+    else
+    {
+        times(&x->x_setcputime);
+    }
 #endif /* _WIN32 */
 }
 
 static void cputime_bang2(t_cputime *x)
 {
+    t_float elapsedcpu;
 #ifndef _WIN32
-    t_float elapsedcpu;
-    struct tms newcputime;
-    times(&newcputime);
-    elapsedcpu = 1000 * (
-        newcputime.tms_utime + newcputime.tms_stime -
+    if(x->x_mode > 0)
+    {
+        struct timespec ts;
+        clock_gettime(x->x_mode == 2 ? CLOCK_THREAD_CPUTIME_ID : CLOCK_PROCESS_CPUTIME_ID, &ts);
+        elapsedcpu = ts_to_ms(ts) - x->x_settime;
+    } 
+    else 
+    {
+        struct tms newcputime;
+        times(&newcputime);
+        elapsedcpu = 1000 * (newcputime.tms_utime + newcputime.tms_stime -
             x->x_setcputime.tms_utime - x->x_setcputime.tms_stime) / CLOCKHZ;
-    outlet_float(x->x_obj.ob_outlet, elapsedcpu);
+    }
 #else
-    t_float elapsedcpu;
     FILETIME ignorethis, ignorethat;
     LARGE_INTEGER usertime, kerneltime;
     BOOL retval;
@@ -219,11 +238,11 @@ static void cputime_bang2(t_cputime *x)
             ((kerneltime.QuadPart - x->x_kerneltime.QuadPart) +
                 (usertime.QuadPart - x->x_usertime.QuadPart));
     else elapsedcpu = 0;
-    outlet_float(x->x_obj.ob_outlet, elapsedcpu);
 #endif /* NOT _WIN32 */
+    outlet_float(x->x_obj.ob_outlet, elapsedcpu);
 }
 
-static void *cputime_new(void)
+static void *cputime_new(t_symbol *mode)
 {
     t_cputime *x = (t_cputime *)pd_new(cputime_class);
     outlet_new(&x->x_obj, gensym("float"));
@@ -231,6 +250,11 @@ static void *cputime_new(void)
     inlet_new(&x->x_obj, &x->x_obj.ob_pd, gensym("bang"), gensym("bang2"));
 #ifdef _WIN32
     x->x_warned = 0;
+#else
+    if(mode == gensym("thread")) x->x_mode = 2;
+    else if(mode == gensym("process")) x->x_mode = 1;
+    else x->x_mode = 0;
+    if(x->x_mode > 0) pd_error(x, "cputime mode: %s", mode->s_name);
 #endif
     cputime_bang(x);
     return (x);
@@ -239,7 +263,7 @@ static void *cputime_new(void)
 static void cputime_setup(void)
 {
     cputime_class = class_new(gensym("cputime"), (t_newmethod)cputime_new, 0,
-        sizeof(t_cputime), 0, 0);
+        sizeof(t_cputime), 0, A_DEFSYMBOL, 0);
     class_addbang(cputime_class, cputime_bang);
     class_addmethod(cputime_class, (t_method)cputime_bang2, gensym("bang2"), 0);
 }
